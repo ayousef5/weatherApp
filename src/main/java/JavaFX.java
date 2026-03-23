@@ -19,7 +19,7 @@ import weather.WeatherAPI;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-
+// Our main weather app class
 public class JavaFX extends Application {
 
     private Stage primaryStage;
@@ -58,7 +58,7 @@ public class JavaFX extends Application {
         primaryStage.setFullScreen(true);
     }
 
-    // label helper, optional bold, fixed max width
+    // helper method that creates a fancy text label.
     private Label styledLabel(String text, double size, boolean bold, Color color) {
         Label l = new Label(text);
         l.setFont(bold ? Font.font("SansSerif", FontWeight.BOLD, size) : Font.font("SansSerif", size));
@@ -69,7 +69,7 @@ public class JavaFX extends Application {
         return l;
     }
 
-    // label with wrapping, muted blue color, and a caller-supplied max width
+    //  helper that makes a small text label that wraps onto multiple lines
     private Label makeWrappingLabel(String text, double maxW) {
         Label l = new Label(text);
         l.setFont(Font.font("SansSerif", 11));
@@ -84,7 +84,7 @@ public class JavaFX extends Application {
     public void start(Stage stage) throws Exception {
         this.primaryStage = stage;
         stage.setTitle("Weather App");
-
+        // Find out what time it is right now.
         LocalDateTime now = LocalDateTime.now();
         int hour   = now.getHour();
         int minute = now.getMinute();
@@ -100,13 +100,13 @@ public class JavaFX extends Application {
         double SW = screen.getWidth(), SH = screen.getHeight();
 
         StackPane scene1Root = buildScene1(forecast, hour, minute, isNight);
-        // scale the fixed-size scene 1 canvas to fill the physical screen
+        // Stretch screen 1 to fill the monitor by scaling it up.
         scene1Root.getTransforms().add(
             new javafx.scene.transform.Scale(SW / W, SH / H, 0, 0));
         javafx.scene.Group fsRoot = new javafx.scene.Group(scene1Root);
         todayScene = new Scene(fsRoot, SW, SH);
 
-        // scene 2 background — SceneBuilder builds the same sky/mountain pane
+        // Build the same sky-and-mountains background for screen 2.
         Pane bg2 = SceneBuilder.buildBackground(hour, minute, isNight);
 
         Button backButton = new Button("\u2190 Back");
@@ -128,7 +128,7 @@ public class JavaFX extends Application {
         int[] dayIdx   = {0, 2, 4, 6};
         int[] nightIdx = {1, 3, 5, 7};
 
-        // text colors vary so they stay legible on day and night backgrounds
+        // Choose text colors so they are easy to read whether it is day or night outside.
         Color cardHeaderColor = isNight ? Color.WHITE : Color.BLACK;
         Color cardBodyColor   = isNight ? Color.web("#c8d8f0") : Color.BLACK;
         Color cardItalicColor = isNight ? Color.web("#e6f0ff") : Color.web("#333333");
@@ -136,7 +136,7 @@ public class JavaFX extends Application {
         HBox cardsRow = new HBox(10);
         cardsRow.setAlignment(Pos.TOP_CENTER);
         cardsRow.setPadding(new Insets(4, 10, 10, 10));
-
+        // Loop 4 times to build 4 forecast cards
         for (int c = 0; c < 4; c++) {
             Period dayP   = forecast.get(dayIdx[c]);
             Period nightP = forecast.get(nightIdx[c]);
@@ -230,7 +230,7 @@ public class JavaFX extends Application {
             });
             cardsRow.getChildren().add(card);
         }
-
+     // Wrap the row of cards in a VBox so it can be centered vertically in the window.
         VBox cardsWrapper = new VBox(cardsRow);
         cardsWrapper.setAlignment(Pos.CENTER);
         VBox scene2Layout = new VBox(0, topBar, cardsWrapper);
@@ -238,7 +238,7 @@ public class JavaFX extends Application {
         scene2Layout.setPrefHeight(H);
         VBox.setVgrow(cardsWrapper, Priority.ALWAYS);
         StackPane root2 = new StackPane(bg2, scene2Layout);
-        // scale scene 2 to fill the physical screen
+        // Stretch screen 2 to fill the monitor
         root2.getTransforms().add(
             new javafx.scene.transform.Scale(SW / W, SH / H, 0, 0));
         javafx.scene.Group fsRoot2 = new javafx.scene.Group(root2);
@@ -255,16 +255,16 @@ public class JavaFX extends Application {
         primaryStage.show();
     }
 
-    // assembles the scene 1 stack: background, house, effects, ui
+    // This method builds all the stuff you see on screen 1: background, house, effects, ui
     private StackPane buildScene1(ArrayList<Period> forecast, int hour, int minute, boolean isNight) {
         StackPane root = new StackPane();
 
-        // build background and pull the polygon refs out of SceneBuilder
+        // Build the sky-and-mountains background and remember the mountain shapes
         bgPane = SceneBuilder.buildBackground(hour, minute, isNight);
         backMtns  = SceneBuilder.backMtns;
         frontMtns = SceneBuilder.frontMtns;
 
-        // build house and pull the window refs out of SceneBuilder
+        // Build the house and remember the window rectangles
         housePn = SceneBuilder.buildHouse(isNight);
         leftWin  = SceneBuilder.leftWin;
         rightWin = SceneBuilder.rightWin;
@@ -283,7 +283,7 @@ public class JavaFX extends Application {
         return root;
     }
 
-    // time label for the given row index (0 = "Now")
+    // Returns a label for a row in the hourly list.
     private static String hourLabel(int i) {
         if (i == 0) return "Now";
         int h = (LocalDateTime.now().getHour() + i) % 24;
@@ -293,7 +293,7 @@ public class JavaFX extends Application {
         else              return (h - 12) + " PM";
     }
 
-    // maps a forecast string to a unicode text symbol
+    // Looks at a weather description like "Rain Showers" and returns a matching symbol.
     private static String weatherEmoji(String forecast) {
         if (forecast == null) return "?";
         String f = forecast.toLowerCase();
@@ -312,7 +312,11 @@ public class JavaFX extends Application {
         return "\u25CB"; // ○
     }
 
-    // builds the left panel, center temp display, top-right info, and tab button
+    // builds the entire User Interface that you see on screen 1
+    // The left panel with hourly rows
+    // the big temp number in the midle
+    // The description and hi/lo labels on the top right
+    // The sideways "Later this week" button on the right edge
     private Pane buildUI(ArrayList<Period> forecast, StackPane root) {
         Pane pane = new Pane();
         pane.setPrefSize(W, H);
@@ -321,7 +325,7 @@ public class JavaFX extends Application {
         final double PANEL_W = 255;
         // inner row width leaves room for the panel padding
         final double ROW_W   = PANEL_W - 12;
-
+         // hourly forecast title
         Label headerLbl = new Label("HOURLY FORECAST");
         headerLbl.setFont(Font.font("SansSerif", FontWeight.BOLD, 9));
         headerLbl.setTextFill(Color.WHITE);
@@ -330,7 +334,7 @@ public class JavaFX extends Application {
         headerLbl.setAlignment(Pos.CENTER);
         headerLbl.setTextAlignment(TextAlignment.CENTER);
         headerLbl.setPadding(new Insets(0, 0, 4, 0));
-
+          // visual divider line
         Region headerSep = new Region();
         headerSep.setPrefHeight(1);
         headerSep.setPrefWidth(ROW_W);
@@ -341,13 +345,13 @@ public class JavaFX extends Application {
         List<HBox> rowList = new ArrayList<>();
         VBox rowsBox = new VBox(0);
 
-        // keep refs to time labels so the clock timeline can update them
+        // timeLabels stores the time text for each row so the clock timer can update them
         Label[] timeLabels = new Label[numRows];
-
+        // builds each hourly row
         for (int i = 0; i < numRows; i++) {
             Period p      = forecast.get(i);
             final int idx = i;
-            // adapter wraps the period so null checks are handled in one place
+            // PeriodAdapter wraps the Period object and handles missing/null data safely
             PeriodAdapter adapter = new PeriodAdapter(p);
 
             Label timeLbl = new Label(hourLabel(i));
@@ -358,7 +362,7 @@ public class JavaFX extends Application {
             timeLbl.setPadding(new Insets(0, 0, 0, 10));
             timeLabels[i] = timeLbl;
 
-            // icon sized bigger so it is legible at panel width
+            // Weather symbol
             Label iconLbl = new Label(weatherEmoji(adapter.getDescription()));
             iconLbl.setFont(Font.font("SansSerif", 18));
             iconLbl.setTextFill(Color.WHITE);
@@ -367,7 +371,7 @@ public class JavaFX extends Application {
             iconCell.setMinWidth(35);
             iconCell.setAlignment(Pos.CENTER);
 
-            // adapter returns 0 when the api omits precipitation data
+            // Precipitation percentage
             int precip = adapter.getPrecipitation();
             Label precipLbl = new Label(precip + "%");
             precipLbl.setFont(Font.font("SansSerif", 9));
@@ -377,13 +381,13 @@ public class JavaFX extends Application {
             precipLbl.setMinWidth(50);
             precipLbl.setAlignment(Pos.CENTER_RIGHT);
 
-            // adapter formats the temperature with the unit suffix
+            // Temperature label (e.g. "68°F")
             Label tempLbl = new Label(adapter.getDisplayTemperature());
             tempLbl.setFont(Font.font("SansSerif", FontWeight.BOLD, 10));
             tempLbl.setTextFill(Color.WHITE);
             tempLbl.setPrefWidth(50);
             tempLbl.setAlignment(Pos.CENTER_RIGHT);
-
+            // Put all four pieces (time, icon, precip, temp) side by side in 1 horizontal row
             HBox row = new HBox(0, timeLbl, iconCell, precipLbl, tempLbl);
             row.setAlignment(Pos.CENTER_LEFT);
             row.setPadding(new Insets(5, 6, 5, 6));
@@ -393,9 +397,11 @@ public class JavaFX extends Application {
             boolean isSelected = (i == 0);
             applyRowStyle(row, timeLbl, precipLbl, tempLbl, isSelected);
 
+            // What happens when the user CLICKS a row:
             row.setOnMouseClicked(e -> {
                 selectedIdx[0] = idx;
-                // update selection highlight on all rows
+                // Loop through all rows and update their highlight color.
+                // Only the clicked row gets the purple highlight
                 for (int j = 0; j < rowList.size(); j++) {
                     HBox r   = rowList.get(j);
                     Label tl  = (Label) r.getChildren().get(0);
@@ -403,9 +409,10 @@ public class JavaFX extends Application {
                     Label tpL = (Label) r.getChildren().get(3);
                     applyRowStyle(r, tl, pl, tpL, j == idx);
                 }
-                // push the selected period data to the top center display
+                // Update the big temperature, description, and hi/lo labels at the top.
                 bigTempLbl.setText(adapter.getDisplayTemperature());
                 topDescLbl.setText(adapter.getDescription());
+                // Recalculate hi/lo by scanning all forecast periods
                 int hi2 = Integer.MIN_VALUE, lo2 = Integer.MAX_VALUE;
                 for (Period fp : forecast) {
                     if (fp.temperature > hi2) hi2 = fp.temperature;
@@ -413,10 +420,10 @@ public class JavaFX extends Application {
                 }
                 topHiLoLbl.setText("H: " + hi2 + "\u00B0   L: " + lo2 + "\u00B0");
                 switchWeatherEffect(getWeatherState(p));
-                // derive day/night from the row's projected clock hour
+                // Figure out if this row's projected time is day or night
                 boolean rowIsNight = PeriodAdapter.isNightHour(idx);
                 int rowHour = (LocalDateTime.now().getHour() + idx) % 24;
-                // sky is always the first child of bgPane
+                // Change the sky color to match the time of the selected row.
                 Rectangle skyR = (Rectangle) bgPane.getChildren().get(0);
                 skyR.setFill(SceneBuilder.buildSkyGradient(rowHour, 0, rowIsNight));
                 Color winColor = rowIsNight ? Color.web("#ffe066") : Color.web("#a8d8f0");
@@ -427,10 +434,14 @@ public class JavaFX extends Application {
                 for (Polygon m : backMtns)  m.setFill(bkMtn);
                 for (Polygon m : frontMtns) m.setFill(ftMtn);
             });
+
+            // What happens when the mouse HOVERS over a row but it is not selected:
+            // give a little bit of shade on the row so the user knows they can click it
             row.setOnMouseEntered(e -> {
                 if (selectedIdx[0] != idx)
                     row.setStyle("-fx-background-color: rgba(255,255,255,0.08);");
             });
+            // remove hover higlight when the mouse leaves the row
             row.setOnMouseExited(e -> {
                 if (selectedIdx[0] != idx)
                     row.setStyle("-fx-background-color: transparent;");
@@ -449,7 +460,7 @@ public class JavaFX extends Application {
         clockTimeline.setCycleCount(Animation.INDEFINITE);
         clockTimeline.play();
 
-        // column header row sits between the separator and the data rows
+        // labels above the data rows telling you what each column means
         Label colTimeHdr = new Label("TIME");
         colTimeHdr.setFont(Font.font("SansSerif", FontWeight.BOLD, 8));
         colTimeHdr.setTextFill(Color.WHITE);
@@ -566,7 +577,7 @@ public class JavaFX extends Application {
         }
     }
 
-    // purple tab button with a lighter hover state
+    // Makes the "Later this week" tab button look purple normally
     private void styleTabButton(Button btn, double prefW, double prefH) {
         String base =
             "-fx-background-color: #6a4fa3; -fx-background-radius: 6;" +
@@ -581,28 +592,6 @@ public class JavaFX extends Application {
         btn.setPrefHeight(prefH);
         btn.setOnMouseEntered(e -> btn.setStyle(hover));
         btn.setOnMouseExited(e -> btn.setStyle(base));
-    }
-
-    // three-point polygon helper
-    private Polygon poly(double x1, double y1, double x2, double y2, double x3, double y3) {
-        return new Polygon(x1, y1, x2, y2, x3, y3);
-    }
-
-    // adds a filled rectangle to p; stroke only drawn when sw > 0
-    private void rect(Pane p, double x, double y, double w, double h,
-                      Color fill, Color stroke, double sw) {
-        Rectangle r = new Rectangle(x, y, w, h);
-        r.setFill(fill);
-        if (sw > 0) { r.setStroke(stroke); r.setStrokeWidth(sw); }
-        p.getChildren().add(r);
-    }
-
-    // adds a line to p with the given stroke color and width
-    private void line(Pane p, double x1, double y1, double x2, double y2,
-                      Color stroke, double sw) {
-        Line l = new Line(x1, y1, x2, y2);
-        l.setStroke(stroke); l.setStrokeWidth(sw);
-        p.getChildren().add(l);
     }
 
     // maps a forecast period to a weather animation state
@@ -637,7 +626,10 @@ public class JavaFX extends Application {
         fadeOut.play();
     }
 
-    // instantiates the correct WeatherEffect subclass and calls the template method
+    // RAIN  -> creates falling raindrops.
+    // SNOW  -> creates falling snowflakes.
+    // CLOUDY -> creates drifting cloud shapes.
+    // CLEAR  -> nothing to draw, so activeEffect stays null.
     private void populateWeatherEffect(WeatherState state) {
         switch (state) {
             case RAIN:   activeEffect = new RainEffect(effectsPane);   activeEffect.build(); break;
