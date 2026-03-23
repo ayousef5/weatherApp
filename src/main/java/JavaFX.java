@@ -14,10 +14,8 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.geometry.*;
 import javafx.util.Duration;
-
 import weather.Period;
 import weather.WeatherAPI;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -133,7 +131,7 @@ public class JavaFX extends Application {
         // text colors vary so they stay legible on day and night backgrounds
         Color cardHeaderColor = isNight ? Color.WHITE : Color.BLACK;
         Color cardBodyColor   = isNight ? Color.web("#c8d8f0") : Color.BLACK;
-        Color cardItalicColor = isNight ? Color.web("#a0b8d8") : Color.BLACK;
+        Color cardItalicColor = isNight ? Color.web("#e6f0ff") : Color.web("#333333");
 
         HBox cardsRow = new HBox(10);
         cardsRow.setAlignment(Pos.TOP_CENTER);

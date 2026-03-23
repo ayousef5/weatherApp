@@ -9,57 +9,45 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.layout.Pane;
 import javafx.util.Duration;
 import java.util.Random;
-
-// template method pattern — abstract class defines the skeleton, subclasses fill in the steps
+// This is the template for any weather Effect
 public abstract class WeatherEffect {
 
-    // shared pane that all subclasses add their nodes to
     protected Pane pane;
-    // shared timeline that all subclasses assign in setupTimeline
     protected Timeline timeline;
 
-    // constructor stores the pane so subclasses can reach it without arguments
     WeatherEffect(Pane pane) {
         this.pane = pane;
     }
 
-    // template method — defines the fixed algorithm that every subclass follows
-    // subclasses cannot override this; the order of steps is locked here
+    // template method — defines the steps of making a weather effect
     final void build() {
-        // step 1: abstract step — subclass populates the pane with nodes
-        createNodes();
-        // step 2: abstract step — subclass wires up the timeline
-        setupTimeline();
-        // steps 3 and 4 are invariant — the superclass owns them
+        createNodes();          // step 1: let subclass create shapes
+        setupTimeline();        // step 2: let subclass make them move
         timeline.setCycleCount(Animation.INDEFINITE); // loop forever
-        timeline.play(); // start animation after both steps are done
+        timeline.play();        // start the movement
     }
 
-    // abstract step 1 — each subclass must define what nodes its effect needs
+    // abstract step 1 — subclass must make its own shapes
     abstract void createNodes();
 
-    // abstract step 2 — each subclass must define how its nodes animate over time
+    // abstract step 2 — subclass must define movement/animation
     abstract void setupTimeline();
 
-    // shared cleanup available to all subclasses — superclass provides a safe default
     void stop() {
         // null check protects subclasses that build() was never called on
         if (timeline != null) timeline.stop();
     }
 }
 
-// concrete subclass — implements the abstract steps for a rain effect
+// Rain Effect — implements the abstract steps for a rain effect
 class RainEffect extends WeatherEffect {
 
-    // number of drops in the effect
-    private static final int N = 90;
-    // node array — one Line per drop, managed across both abstract steps
-    private Line[] drops = new Line[N];
-    // per-drop state arrays shared between createNodes and the timeline closure
-    private double[] dropY = new double[N];
-    private double[] dropX = new double[N];
-    private double[] speed = new double[N];
-    private double[] len   = new double[N];
+    private static final int N = 90;    // number of raindrops
+    private Line[] drops = new Line[N];  // array to hold each raindrop
+    private double[] dropY = new double[N]; // y position for each drop
+    private double[] dropX = new double[N]; // x position for each drop
+    private double[] speed = new double[N]; // speed for each drop
+    private double[] len   = new double[N]; // length of each drop
 
     // passes the shared pane up to the superclass constructor
     RainEffect(Pane pane) { super(pane); }
@@ -67,133 +55,124 @@ class RainEffect extends WeatherEffect {
     // implements abstract step 1 — creates all rain drop nodes and places them on the pane
     @Override
     void createNodes() {
-        Random rng = new Random(); // random start positions so drops are spread across the screen
+        Random rng = new Random(); // create random number generator
+
         for (int i = 0; i < N; i++) {
-            // randomize position so drops don't all start at the same spot
-            dropX[i] = rng.nextDouble() * JavaFX.W;
-            dropY[i] = rng.nextDouble() * JavaFX.H;
-            // randomize speed and length so the rain feels natural
-            speed[i] = 5 + rng.nextDouble() * 5;
-            len[i]   = 9 + rng.nextDouble() * 9;
-            // angled drop — x+1.5 gives a slight diagonal to look like real rain
+            dropX[i] = rng.nextDouble() * JavaFX.W; // random x position
+            dropY[i] = rng.nextDouble() * JavaFX.H; // random y position
+            speed[i] = 5 + rng.nextDouble() * 5;    // random speed
+            len[i]   = 9 + rng.nextDouble() * 9;    // random length
+
+            // create a line for the raindrop
             drops[i] = new Line(dropX[i], dropY[i], dropX[i] + 1.5, dropY[i] + len[i]);
-            // semi-transparent blue matches a rainy sky tone
-            drops[i].setStroke(Color.web("#90c8f0", 0.42));
-            drops[i].setStrokeWidth(1);
-            // adding to pane is the responsibility of this abstract step
-            pane.getChildren().add(drops[i]);
+            drops[i].setStroke(Color.web("#90c8f0", 0.42)); // light blue color
+            drops[i].setStrokeWidth(1);                      // line thickness
+
+            pane.getChildren().add(drops[i]); // add drop to the pane
         }
     }
 
     // implements abstract step 2 — defines how drop positions update each frame
     @Override
     void setupTimeline() {
-        // ~60fps keyframe — tight interval keeps rain motion smooth
+        // make the drops move every 16 milliseconds (~60 fps)
         timeline = new Timeline(new KeyFrame(Duration.millis(16), e -> {
             for (int i = 0; i < N; i++) {
-                // advance each drop downward by its speed
-                dropY[i] += speed[i];
-                // wrap off the bottom — resets to top with a new random x
-                if (dropY[i] > JavaFX.H + 20) { dropY[i] = -20; dropX[i] = new Random().nextDouble() * JavaFX.W; }
-                // update the Line node to match the new position
-                drops[i].setStartX(dropX[i]); drops[i].setStartY(dropY[i]);
-                drops[i].setEndX(dropX[i] + 1.5); drops[i].setEndY(dropY[i] + len[i]);
+                dropY[i] += speed[i]; // move drop down by speed
+                if (dropY[i] > JavaFX.H + 20) { // if drop goes off screen
+                    dropY[i] = -20;               // put it back at top
+                    dropX[i] = new Random().nextDouble() * JavaFX.W; // new random x
+                }
+                // update the line position
+                drops[i].setStartX(dropX[i]);
+                drops[i].setStartY(dropY[i]);
+                drops[i].setEndX(dropX[i] + 1.5);
+                drops[i].setEndY(dropY[i] + len[i]);
             }
         }));
     }
 }
 
-// concrete subclass — implements the abstract steps for a snow effect
+// Snow Effect
 class SnowEffect extends WeatherEffect {
 
-    // fewer flakes than rain — snow is lighter and slower
-    private static final int N = 65;
-    // node array — one Circle per flake
-    private Circle[] flakes = new Circle[N];
-    // per-flake position arrays shared between the two abstract steps
-    private double[] fx = new double[N], fy = new double[N];
-    // speed controls fall rate; drift and phase drive the horizontal sway
-    private double[] speed = new double[N], drift = new double[N], phase = new double[N];
+    private static final int N = 65;        // number of snowflakes
+    private Circle[] flakes = new Circle[N]; // array to hold each snowflake
+    private double[] fx = new double[N];    // x position
+    private double[] fy = new double[N];    // y position
+    private double[] speed = new double[N]; // fall speed
+    private double[] drift = new double[N]; // horizontal sway
+    private double[] phase = new double[N]; // phase for sway
 
-    // passes the shared pane up to the superclass constructor
     SnowEffect(Pane pane) { super(pane); }
 
-    // implements abstract step 1 — creates all snowflake nodes and places them on the pane
     @Override
     void createNodes() {
-        Random rng = new Random(); // random positions and sizes
+        Random rng = new Random(); // random number generator
+
         for (int i = 0; i < N; i++) {
-            // spread flakes across the full canvas at startup
-            fx[i] = rng.nextDouble() * JavaFX.W;
-            fy[i] = rng.nextDouble() * JavaFX.H;
-            // slower fall speed than rain to differentiate the two effects visually
-            speed[i] = 0.7 + rng.nextDouble() * 1.1;
-            // small drift magnitude keeps sway subtle
-            drift[i] = 0.3 + rng.nextDouble() * 0.5;
-            // unique phase per flake so they don't all sway in sync
-            phase[i] = rng.nextDouble() * Math.PI * 2; // offset sway phases
-            // vary radius slightly for a more natural look
-            double r = 1.8 + rng.nextDouble() * 2.5;
-            // soft white flake with high opacity
-            flakes[i] = new Circle(fx[i], fy[i], r, Color.web("#e8f4ff", 0.85));
-            // adding to pane is the responsibility of this abstract step
-            pane.getChildren().add(flakes[i]);
+            fx[i] = rng.nextDouble() * JavaFX.W;       // random x start
+            fy[i] = rng.nextDouble() * JavaFX.H;       // random y start
+            speed[i] = 0.7 + rng.nextDouble() * 1.1;   // slow fall speed
+            drift[i] = 0.3 + rng.nextDouble() * 0.5;   // sideways sway
+            phase[i] = rng.nextDouble() * Math.PI * 2; // start phase
+
+            double r = 1.8 + rng.nextDouble() * 2.5;  // size of snowflake
+            flakes[i] = new Circle(fx[i], fy[i], r, Color.web("#e8f4ff", 0.85)); // white snowflake
+
+            pane.getChildren().add(flakes[i]); // add to pane
         }
     }
 
-    // implements abstract step 2 — defines how flake positions update each frame
     @Override
     void setupTimeline() {
-        // ~30fps — slower tick rate reflects snow's gentle pace
-        final long[] frame = {0}; // frame counter used to advance the sine wave
-        timeline = new Timeline(new KeyFrame(Duration.millis(33), e -> {
-            frame[0]++; // increment so the sine argument advances each tick
+        final long[] frame = {0}; // frame counter
+
+        timeline = new Timeline(new KeyFrame(Duration.millis(33), e -> { // update ~30 fps
+            frame[0]++; // increase frame count
             for (int i = 0; i < N; i++) {
-                // fall straight down at per-flake speed
-                fy[i] += speed[i];
-                // horizontal sway driven by a sine wave — gives a drifting feel
-                fx[i] += Math.sin(phase[i] + frame[0] * 0.04) * drift[i]; // sine drift
-                // wrap off the bottom — resets to top with a new random x
-                if (fy[i] > JavaFX.H + 10) { fy[i] = -10; fx[i] = new Random().nextDouble() * JavaFX.W; }
-                // update Circle node to match new position
-                flakes[i].setCenterX(fx[i]);
-                flakes[i].setCenterY(fy[i]);
+                fy[i] += speed[i]; // move down
+                fx[i] += Math.sin(phase[i] + frame[0] * 0.04) * drift[i]; // sway sideways
+
+                if (fy[i] > JavaFX.H + 10) { // if off screen
+                    fy[i] = -10; // back to top
+                    fx[i] = new Random().nextDouble() * JavaFX.W; // new x
+                }
+
+                flakes[i].setCenterX(fx[i]); // update x position
+                flakes[i].setCenterY(fy[i]); // update y position
             }
         }));
     }
 }
 
-// concrete subclass — implements the abstract steps for a cloudy/overcast effect
+// ------------------- Cloud Effect -------------------
 class CloudEffect extends WeatherEffect {
 
-    // passes the shared pane up to the superclass constructor
     CloudEffect(Pane pane) { super(pane); }
 
-    // implements abstract step 1 — adds a dark overlay and static cloud ellipses
     @Override
     void createNodes() {
-        // full-canvas overlay dims the background sky to simulate overcast light
+        // dark rectangle to make sky look cloudy
         Rectangle overlay = new Rectangle(0, 0, JavaFX.W, JavaFX.H);
-        // low opacity so the background still shows through
-        overlay.setFill(Color.web("#404860", 0.28));
+        overlay.setFill(Color.web("#404860", 0.28)); // semi-transparent gray
         pane.getChildren().add(overlay);
-        double[][] clouds = { // cx, cy, rx, ry per cloud — five static clouds across the sky
-            {130, 75,  95, 32}, {310, 52, 115, 36}, {510, 68, 105, 33},
-            {695, 58,  88, 28}, {840, 88,  78, 26}
+
+        // make five clouds
+        double[][] clouds = {
+                {130, 75, 95, 32}, {310, 52, 115, 36}, {510, 68, 105, 33},
+                {695, 58, 88, 28}, {840, 88, 78, 26}
         };
+
         for (double[] c : clouds) {
-            // each cloud is a semi-transparent ellipse placed at a fixed position
-            Ellipse e = new Ellipse(c[0], c[1], c[2], c[3]);
-            // light grey at low opacity blends with the dimmed sky
-            e.setFill(Color.web("#c8d0e0", 0.20));
-            pane.getChildren().add(e);
+            Ellipse e = new Ellipse(c[0], c[1], c[2], c[3]); // make cloud shape
+            e.setFill(Color.web("#c8d0e0", 0.20));          // light gray
+            pane.getChildren().add(e);                       // add to pane
         }
     }
 
-    // implements abstract step 2 — clouds are static so no animation is needed
-    // the template method still requires a non-null timeline, so an empty one is assigned
     @Override
     void setupTimeline() {
-        timeline = new Timeline(); // no animation needed — satisfies the template method contract
+        timeline = new Timeline(); // no movement, but needed by template
     }
 }
