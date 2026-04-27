@@ -33,6 +33,7 @@
 
   ## Project Structure
 
+  ```
   weatherApp/
   ├── src/
   │   └── main/
@@ -57,7 +58,7 @@
   │           ├── scene2Day.png
   │           └── scene2Night.png
   └── pom.xml
-
+  ```
   ## Getting Started
 
   ### Prerequisites
